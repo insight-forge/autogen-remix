@@ -206,6 +206,7 @@ class Completion(openai_Completion):
                 # print("using cached response")
                 cls._book_keeping(config, response)
                 return response
+        print(colored(f"\n****llm generate****{config['presence_penalty']}", "blue"), flush=True)
         openai_completion = (
             openai.ChatCompletion
             if config["model"].replace("gpt-35-turbo", "gpt-3.5-turbo") in cls.chat_models
@@ -706,7 +707,7 @@ class Completion(openai_Completion):
     def create(
         cls,
         context: Optional[Dict] = None,
-        use_cache: Optional[bool] = True,
+        use_cache: Optional[bool] = False,
         config_list: Optional[List[Dict]] = None,
         filter_func: Optional[Callable[[Dict, Dict, Dict], bool]] = None,
         raise_on_ratelimit_or_timeout: Optional[bool] = True,
