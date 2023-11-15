@@ -1,12 +1,16 @@
 import streamlit as st
 import asyncio
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
-from autogen import Agent
+import time
+
+import autogen
 from autogen.agentchat.contrib.character_assistant_agent import CharacterAssistantAgent
 from autogen.agentchat.contrib.character_user_proxy_agent import CharacterUserProxyAgent
-import json
 
-DEFAULT_CONFIG = json.load(open('./llm_config.json', 'r'))
+################################# PLEASE SET THE CONFIG FIRST ##################################
+CONFIG_PATH = "{the dir path of the config file}"
+CONFIG_FILENAME = "OAI_CONFIG_LIST"
+################################################################################################
 
 ASSISTANT_NAME_DEFAULT = "assistant"
 ASSISTANT_SYSTEM_DEFAULT = """你是一个AI助手，使用你的编码和语言技能解决任务，请注意以下几点：
@@ -18,7 +22,7 @@ ASSISTANT_SYSTEM_DEFAULT = """你是一个AI助手，使用你的编码和语言
 USERPROXY_NAME_DEFAULT = "user"
 USERPROXY_AUTO_REPLY_DEFAULT = """如果你认为当前任务已经执行完毕，请回复我"TERMINATE"终止任务，否则请继续执行任务。"""
 
-st.write("""# AutoGen Chat Agents""")
+st.write("""# Character Chat""")
 
 
 def generate_img(prompt):
@@ -38,10 +42,42 @@ class TrackableAssistantAgent(CharacterAssistantAgent):
 
 
 class TrackableUserProxyAgent(CharacterUserProxyAgent):
+
+    def __init__(
+            self,
+            name: str,
+            llm_config: Optional[Union[Dict, bool]] = None,
+            is_termination_msg: Optional[Callable[[Dict], bool]] = None,
+            max_consecutive_auto_reply: Optional[int] = None,
+            human_input_mode: Optional[str] = "NEVER",
+            code_execution_config: Optional[Union[Dict, bool]] = False,
+            **kwargs,
+    ):
+        super().__init__(
+            name,
+            is_termination_msg,
+            max_consecutive_auto_reply,
+            human_input_mode,
+            code_execution_config=code_execution_config,
+            llm_config=llm_config,
+            **kwargs,
+        )
+
+        self.input_text = None
+        self.is_done = True
+
     def _process_received_message(self, message, sender, silent):
         with st.chat_message(sender.name):
             st.markdown(message)
         return super()._process_received_message(message, sender, silent)
+
+    def get_human_input(self, prompt):
+        while self.input_text is None:
+            time.sleep(1)
+
+        reply = self.input_text
+        self.input_text = None
+        return reply
 
 
 selected_model = None
@@ -59,15 +95,19 @@ with st.sidebar:
         human_input_mode = st.selectbox('human input mode', ['NEVER', 'TERMINATE', 'ALLWAYS'], index=1)
         userproxy_auto_reply = st.text_area('auto reply', value=USERPROXY_AUTO_REPLY_DEFAULT)
 
-DEFAULT_CONFIG.update({'model': selected_model, 'presence_penalty': presence_penalty})
-print(DEFAULT_CONFIG)
-with st.container():
-    # for message in st.session_state["messages"]:
-    #    st.markdown(message)
+config_list = autogen.config_list_from_json(
+        file_location=CONFIG_PATH,
+        env_or_file=CONFIG_FILENAME,
+        filter_dict={
+            "model": {
+                "gpt-3.5-turbo",
+                #"gpt-4",
+                #selected_model,
+            }
+        })
+#config_list = [item.update({'presence_penalty': presence_penalty}) for item in config_list if item['model'] == selected_model]
 
-    user_input = st.chat_input("Type something...")
-    if user_input:
-        llm_config = {
+llm_config = {
             "functions": [
                 {
                     "name": "image_generate",
@@ -86,38 +126,54 @@ with st.container():
 
             ],
             "request_timeout": 600,
-            "config_list": [
-                DEFAULT_CONFIG
-            ]
+            "config_list": config_list
         }
-        # create an AssistantAgent instance named "assistant"
-        assistant = TrackableAssistantAgent(
-            name=assistant_name,
-            system_message=assistant_system,
-            llm_config=llm_config)
+print(llm_config)
 
-        # create a UserProxyAgent instance named "user"
-        user_proxy = TrackableUserProxyAgent(
-            name=userproxy_name,
-            default_auto_reply=userproxy_auto_reply,
-            is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("TERMINATE"),
-            human_input_mode=human_input_mode)
-        user_proxy.register_function(
-            function_map={
-                "image_generate": generate_img
-            }
-        )
+# # create an AssistantAgent instance named "assistant"
+# assistant = TrackableAssistantAgent(
+#     name=assistant_name,
+#     system_message=assistant_system,
+#     llm_config=llm_config)
+#
+# # create a UserProxyAgent instance named "user"
+# user_proxy = TrackableUserProxyAgent(
+#     name=userproxy_name,
+#     default_auto_reply=userproxy_auto_reply,
+#     is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("TERMINATE"),
+#     human_input_mode=human_input_mode)
+#
+# user_proxy.register_function(
+#     function_map={
+#         "image_generate": generate_img
+#     }
+# )
+
+# create an AssistantAgent instance named "assistant"
+assistant = TrackableAssistantAgent(
+    name="assistant", llm_config=llm_config)
+
+# create a UserProxyAgent instance named "user"
+user_proxy = TrackableUserProxyAgent(
+    name="user", human_input_mode="ALWAYS", llm_config=llm_config)
+
+
+with st.container():
+    # for message in st.session_state["messages"]:
+    #    st.markdown(message)
+
+    if user_input := st.chat_input("Type something...", key="prompt"):
+        user_proxy.input_text = user_input
+
+        # Define an asynchronous function
+        async def initiate_chat():
+                user_proxy.initiate_chat(
+                    assistant,
+                    message=user_input,
+                )
 
         # Create an event loop
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-
-        # Define an asynchronous function
-        async def initiate_chat():
-            await user_proxy.a_initiate_chat(
-                assistant,
-                message=user_input,
-            )
-
         # Run the asynchronous function within the event loop
         loop.run_until_complete(initiate_chat())

@@ -1,4 +1,3 @@
-import streamlit as st
 import asyncio
 from collections import defaultdict
 import copy
@@ -21,6 +20,7 @@ except ImportError:
 
     def colored(x, *args, **kwargs):
         return x
+
 
 logger = logging.getLogger(__name__)
 
@@ -702,11 +702,9 @@ class ConversableAgent(Agent):
                     reply = "exit"
                 else:
                     # self.human_input_mode == "TERMINATE":
-                    # reply = self.get_human_input(
-                    #     f"Please give feedback to {sender.name}. Press enter or type 'exit' to stop the conversation: "
-                    # )
-
-                    reply = self.get_user_input(sender)
+                    reply = self.get_human_input(
+                        f"Please give feedback to {sender.name}. Press enter or type 'exit' to stop the conversation: "
+                    )
                     no_human_input_msg = "NO HUMAN INPUT RECEIVED." if not reply else ""
                     # if the human input is empty, and the message is a termination message, then we will terminate the conversation
                     reply = reply or "exit"
@@ -733,17 +731,6 @@ class ConversableAgent(Agent):
             print(colored("\n>>>>>>>> USING AUTO REPLY...", "red"), flush=True)
 
         return False, None
-
-    def get_user_input(self, sender):
-        reply = ""
-        # options = ["Provide feedback", "exit"]
-        user_input = st.chat_input(f"Please give feedback to {sender.name}. Type 'exit' to stop the conversation")
-        if user_input:
-            reply = user_input
-            print("reply = user_input")
-        else:
-            st.warning('请输入内容！')
-        return reply
 
     def generate_reply(
         self,
