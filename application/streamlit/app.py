@@ -79,6 +79,17 @@ class TrackableUserProxyAgent(CharacterUserProxyAgent):
         self.input_text = None
         return reply
 
+    async def a_initiate_chat(
+            self,
+            recipient: "ConversableAgent",
+            clear_history: Optional[bool] = True,
+            silent: Optional[bool] = False,
+            **context,
+    ):
+        self.is_done = False
+        super().a_initiate_chat(recipient, clear_history, silent, **context)
+        self.is_done = True
+
 
 selected_model = None
 with st.sidebar:
@@ -163,17 +174,19 @@ with st.container():
     #    st.markdown(message)
 
     if user_input := st.chat_input("Type something...", key="prompt"):
-        user_proxy.input_text = user_input
+        if not user_proxy.is_done:
+            user_proxy.input_text = user_input
 
-        # Define an asynchronous function
-        async def initiate_chat():
+        if user_proxy.is_done:
+            # Define an asynchronous function
+            async def initiate_chat():
                 user_proxy.initiate_chat(
                     assistant,
                     message=user_input,
                 )
 
-        # Create an event loop
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        # Run the asynchronous function within the event loop
-        loop.run_until_complete(initiate_chat())
+            # Create an event loop
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            # Run the asynchronous function within the event loop
+            loop.run_until_complete(initiate_chat())
