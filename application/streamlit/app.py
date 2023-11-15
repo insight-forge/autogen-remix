@@ -2,6 +2,7 @@ import streamlit as st
 import asyncio
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 import time
+import requests
 
 import autogen
 from autogen.agentchat.contrib.character_assistant_agent import CharacterAssistantAgent
@@ -27,7 +28,10 @@ st.write("""# Character Chat""")
 
 def generate_img(prompt):
     # 定义目标URL和要发送的数据
-    return "http://10.139.17.136:7890/test.png"
+    url = "http://10.139.17.136:8089/sd_gen"
+    data = {"prompt": prompt}
+    response = requests.post(url, data=data)
+    return response.text
 
 
 class TrackableAssistantAgent(CharacterAssistantAgent):
@@ -46,7 +50,7 @@ class TrackableUserProxyAgent(CharacterUserProxyAgent):
     def __init__(
             self,
             name: str,
-            llm_config: Optional[Union[Dict, bool]] = None,
+            llm_config: Optional[Union[Dict, bool]] = False,
             is_termination_msg: Optional[Callable[[Dict], bool]] = None,
             max_consecutive_auto_reply: Optional[int] = None,
             human_input_mode: Optional[str] = "NEVER",
@@ -91,7 +95,6 @@ class TrackableUserProxyAgent(CharacterUserProxyAgent):
         self.is_done = True
 
 
-selected_model = None
 with st.sidebar:
     st.header("OpenAI Configuration")
     selected_model = st.selectbox("Model", ['gpt-3.5-turbo'], index=0)
@@ -107,16 +110,17 @@ with st.sidebar:
         userproxy_auto_reply = st.text_area('auto reply', value=USERPROXY_AUTO_REPLY_DEFAULT)
 
 config_list = autogen.config_list_from_json(
-        file_location=CONFIG_PATH,
-        env_or_file=CONFIG_FILENAME,
-        filter_dict={
-            "model": {
-                "gpt-3.5-turbo",
-                #"gpt-4",
-                #selected_model,
-            }
-        })
-#config_list = [item.update({'presence_penalty': presence_penalty}) for item in config_list if item['model'] == selected_model]
+    file_location=CONFIG_PATH,
+    env_or_file=CONFIG_FILENAME,
+    filter_dict={
+        "model": {
+            "gpt-3.5-turbo",
+            # "gpt-4",
+            # selected_model,
+        }
+    })
+config_list = [item.update({'presence_penalty': presence_penalty}) or item for item in config_list if
+               item['model'] == selected_model]
 
 llm_config = {
             "functions": [
@@ -141,33 +145,24 @@ llm_config = {
         }
 print(llm_config)
 
-# # create an AssistantAgent instance named "assistant"
-# assistant = TrackableAssistantAgent(
-#     name=assistant_name,
-#     system_message=assistant_system,
-#     llm_config=llm_config)
-#
-# # create a UserProxyAgent instance named "user"
-# user_proxy = TrackableUserProxyAgent(
-#     name=userproxy_name,
-#     default_auto_reply=userproxy_auto_reply,
-#     is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("TERMINATE"),
-#     human_input_mode=human_input_mode)
-#
-# user_proxy.register_function(
-#     function_map={
-#         "image_generate": generate_img
-#     }
-# )
-
 # create an AssistantAgent instance named "assistant"
 assistant = TrackableAssistantAgent(
-    name="assistant", llm_config=llm_config)
+    name=assistant_name,
+    system_message=assistant_system,
+    llm_config=llm_config)
 
 # create a UserProxyAgent instance named "user"
 user_proxy = TrackableUserProxyAgent(
-    name="user", human_input_mode="ALWAYS", llm_config=llm_config)
+    name=userproxy_name,
+    default_auto_reply=userproxy_auto_reply,
+    is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("TERMINATE"),
+    human_input_mode=human_input_mode)
 
+user_proxy.register_function(
+    function_map={
+        "image_generate": generate_img
+    }
+)
 
 with st.container():
     # for message in st.session_state["messages"]:
