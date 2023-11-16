@@ -23,8 +23,11 @@ ASSISTANT_SYSTEM_DEFAULT = """你是一个AI助手，使用你的编码和语言
 USERPROXY_NAME_DEFAULT = "user"
 USERPROXY_AUTO_REPLY_DEFAULT = """如果你认为当前任务已经执行完毕，请回复我"TERMINATE"终止任务，否则请继续执行任务。"""
 
+st.set_page_config(
+        "Character Chat",
+        initial_sidebar_state="collapsed",
+    )
 st.write("""# Character Chat""")
-
 
 def generate_img(prompt):
     # 定义目标URL和要发送的数据
@@ -91,7 +94,7 @@ class TrackableUserProxyAgent(CharacterUserProxyAgent):
             **context,
     ):
         self.is_done = False
-        super().a_initiate_chat(recipient, clear_history, silent, **context)
+        await super().a_initiate_chat(recipient, clear_history, silent, **context)
         self.is_done = True
 
 
