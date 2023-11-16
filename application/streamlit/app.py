@@ -158,12 +158,12 @@ def main():
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "cell": {
+                            "code": {
                                 "type": "string",
                                 "description": "Valid Python cell to execute.",
                             }
                         },
-                        "required": ["cell"],
+                        "required": ["code"],
                     },
                 },
                           ],
@@ -193,8 +193,8 @@ def main():
         response = requests.post(url, data=data)
         return response.text
 
-    def exec_python(script):
-        return user_proxy.execute_code_blocks([("python", script)])
+    def exec_python(code):
+        return user_proxy.execute_code_blocks([("python", code)])
 
     user_proxy.register_function(
         function_map={
