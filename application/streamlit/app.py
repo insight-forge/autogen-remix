@@ -31,23 +31,6 @@ st.set_page_config(
 st.write("""# Character Chat""")
 
 
-def generate_img(prompt):
-    # 定义目标URL和要发送的数据
-    url = "http://10.139.17.136:8089/sd_gen"
-    data = {"prompt": prompt}
-    response = requests.post(url, data=data)
-    return response.text
-
-def exec_python(cell):
-    ipython = get_ipython()
-    result = ipython.run_cell(cell)
-    log = str(result.result)
-    if result.error_before_exec is not None:
-        log += f"\n{result.error_before_exec}"
-    if result.error_in_exec is not None:
-        log += f"\n{result.error_in_exec}"
-    return log
-
 class TrackableAssistantAgent(CharacterAssistantAgent):
     def _process_received_message(self, message, sender, silent):
         if isinstance(message, Dict) and "name" in message:
@@ -59,6 +42,8 @@ class TrackableAssistantAgent(CharacterAssistantAgent):
             if isinstance(message, Dict) and 'name' in message:
                 if message['name'].startswith('image_'):
                     st.image(message['content'], width=350)
+                else:
+                    st.markdown(message['content'])
             else:
                 st.markdown(message)
         return super()._process_received_message(message, sender, silent)
@@ -177,12 +162,12 @@ def main():
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "cell": {
+                            "code": {
                                 "type": "string",
                                 "description": "Valid Python cell to execute.",
                             }
                         },
-                        "required": ["cell"],
+                        "required": ["code"],
                     },
                 },
                           ],
@@ -204,6 +189,16 @@ def main():
         is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("TERMINATE"),
         human_input_mode=human_input_mode,
         code_execution_config={'work_dir': 'coding'})
+
+    def generate_img(prompt):
+        # 定义目标URL和要发送的数据
+        url = "http://10.139.17.136:8089/sd_gen"
+        data = {"prompt": prompt}
+        response = requests.post(url, data=data)
+        return response.text
+
+    def exec_python(code):
+        return user_proxy.execute_code_blocks([("python", code)])
 
     user_proxy.register_function(
         function_map={
