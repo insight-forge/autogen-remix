@@ -3,13 +3,13 @@ import asyncio
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 import time
 import requests
-
+from IPython import get_ipython
 import autogen
 from autogen.agentchat.contrib.character_assistant_agent import CharacterAssistantAgent
 from autogen.agentchat.contrib.character_user_proxy_agent import CharacterUserProxyAgent
 
 ################################# PLEASE SET THE CONFIG FIRST ##################################
-CONFIG_PATH = "/data1/llm/codes/openai_config"
+CONFIG_PATH = "{the dir path of the config file}"
 CONFIG_FILENAME = "OAI_CONFIG_LIST"
 ################################################################################################
 
@@ -34,6 +34,15 @@ def generate_img(prompt):
     response = requests.post(url, data=data)
     return response.text
 
+def exec_python(cell):
+    ipython = get_ipython()
+    result = ipython.run_cell(cell)
+    log = str(result.result)
+    if result.error_before_exec is not None:
+        log += f"\n{result.error_before_exec}"
+    if result.error_in_exec is not None:
+        log += f"\n{result.error_in_exec}"
+    return log
 
 class TrackableAssistantAgent(CharacterAssistantAgent):
     def _process_received_message(self, message, sender, silent):
@@ -146,7 +155,7 @@ def main():
         "functions": [
             {
                 "name": "image_generate",
-                "description": "generate a image by prompting",
+                "description": "generate a image by prompting if the user's intention is to generate an image",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -158,7 +167,21 @@ def main():
                     "required": ["prompt"],
                 },
             },
-        ],
+                {
+                    "name": "python",
+                    "description": "run cell in ipython and return the execution result.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "cell": {
+                                "type": "string",
+                                "description": "Valid Python cell to execute.",
+                            }
+                        },
+                        "required": ["cell"],
+                    },
+                },
+                          ],
         "request_timeout": 600,
         "config_list": config_list
     }
@@ -180,7 +203,8 @@ def main():
 
     user_proxy.register_function(
         function_map={
-            "image_generate": generate_img
+            "image_generate": generate_img,
+             "python":exec_python
         }
     )
 
