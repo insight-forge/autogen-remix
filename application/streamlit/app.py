@@ -35,7 +35,7 @@ ASSISTANT_SYSTEM_DEFAULT = """你是一个有用的AI助手。使用你的编码
 
 USERPROXY_NAME_DEFAULT = "user"
 USERPROXY_AUTO_REPLY_DEFAULT = """请直接用以下内容回复：
-```TERMINATE```
+TERMINATE
 """
 
 st.set_page_config(
