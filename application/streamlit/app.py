@@ -55,6 +55,8 @@ class TrackableAssistantAgent(CharacterAssistantAgent):
             if isinstance(message, Dict) and 'name' in message:
                 if message['name'].startswith('image_'):
                     st.image(message['content'], width=350)
+                else:
+                    st.markdown(message['content'])
             else:
                 st.markdown(message)
         return super()._process_received_message(message, sender, silent)
