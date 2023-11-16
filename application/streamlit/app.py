@@ -27,23 +27,6 @@ USERPROXY_AUTO_REPLY_DEFAULT = """如果你认为任务已经执行完毕或者�
 st.write("""# Character Chat""")
 
 
-def generate_img(prompt):
-    # 定义目标URL和要发送的数据
-    url = "http://10.139.17.136:8089/sd_gen"
-    data = {"prompt": prompt}
-    response = requests.post(url, data=data)
-    return response.text
-
-def exec_python(cell):
-    ipython = get_ipython()
-    result = ipython.run_cell(cell)
-    log = str(result.result)
-    if result.error_before_exec is not None:
-        log += f"\n{result.error_before_exec}"
-    if result.error_in_exec is not None:
-        log += f"\n{result.error_in_exec}"
-    return log
-
 class TrackableAssistantAgent(CharacterAssistantAgent):
     def _process_received_message(self, message, sender, silent):
         if isinstance(message, Dict) and "name" in message:
@@ -202,6 +185,16 @@ def main():
         is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("TERMINATE"),
         human_input_mode=human_input_mode,
         code_execution_config={'work_dir': 'coding'})
+
+    def generate_img(prompt):
+        # 定义目标URL和要发送的数据
+        url = "http://10.139.17.136:8089/sd_gen"
+        data = {"prompt": prompt}
+        response = requests.post(url, data=data)
+        return response.text
+
+    def exec_python(script):
+        return user_proxy.execute_code_blocks([("python", script)])
 
     user_proxy.register_function(
         function_map={
