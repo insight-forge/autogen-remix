@@ -185,7 +185,7 @@ def main():
         is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("TERMINATE"),
         human_input_mode=human_input_mode,
         code_execution_config={'work_dir': 'coding'})
-
+    #define all fucntion
     def generate_img(prompt):
         # 定义目标URL和要发送的数据
         url = "http://10.139.17.136:8089/sd_gen"
