@@ -9,20 +9,34 @@ from autogen.agentchat.contrib.character_assistant_agent import CharacterAssista
 from autogen.agentchat.contrib.character_user_proxy_agent import CharacterUserProxyAgent
 
 ################################# PLEASE SET THE CONFIG FIRST ##################################
-CONFIG_PATH = "{the dir path of the config file}"
+CONFIG_PATH = "/Users/JunzhouWang/IdeaProjects/autogen-remix"
 CONFIG_FILENAME = "OAI_CONFIG_LIST"
 ################################################################################################
 
 ASSISTANT_NAME_DEFAULT = "assistant"
-ASSISTANT_SYSTEM_DEFAULT = """你是一个AI助手，使用你的编码和语言技能和代理一起解决任务，请注意以下几点：
-1.与你对话的是代理，他具有和人类交互、执行Python代码或shell脚本、执行function等功能。
-1.你可以编写python代码或shell脚本供其他代理执行，与你对话的代理会回复执行结果。
-2.代理仅可执行一个代码块，所以不要在一个回答中包含多个代码块，不要要求代理复制并粘贴结果。代码里可以使用 'print' 函数进行输出，检查代理返回的执行结果。
-3.如果需要，你可以使用提供给你的functions。
-4.如果你认为任务执行完毕，或者需要人工介入，你可以在最后回复"TERMINATE"以终止和代理的交互。"""
+ASSISTANT_SYSTEM_DEFAULT = """你是一个有用的AI助手。使用你的编码和语言能力完成任务。
+
+当任务完成或需要人工输入时，必须在生成的内容末尾添加字符串”TERMINATE“，如以下示例：
+```
+问：你好
+答：你好，有什么需要我帮助的吗？ TERMINATE
+```
+
+在以下情况下，建议用户执行Python代码（在Python代码块中）或Shell脚本（在sh代码块中）。
+1. 当你需要收集信息时，使用代码输出你需要的信息，例如浏览或搜索网页，下载/读取文件，打印网页或文件的内容，获取当前日期/时间，检查操作系统。在打印足够信息并且准备根据你的语言技能解决任务时，你可以自行解决任务。
+2. 当你需要用代码执行某些任务时，请使用代码执行任务并输出结果。聪明地完成任务。
+
+如果有需要，请一步一步解决问题。如果没有提供计划，请先解释你的计划。清楚地说明哪一步使用代码，哪一步使用语言能力。
+在使用代码时，你必须在代码块中指明脚本类型。用户不能提供任何其他反馈或执行任何其他操作，只能执行你建议的代码。用户不能修改你的代码。因此，请不要建议需要用户修改的不完整代码。如果不打算让用户执行代码，请不要使用代码块。
+如果你希望用户在执行代码之前将代码保存到文件中，请在代码块中作为第一行添加# filename: <filename>。不要在一个回答中包含多个代码块。不要要求用户复制并粘贴结果。相反，当相关时请使用 'print' 函数进行输出。检查用户返回的执行结果。
+如果结果表明存在错误，请修复错误并重新输出代码。建议提供完整的代码，而不是部分代码或代码更改。如果错误无法修复，或者即使成功执行代码后任务仍未解决，请分析问题，重新审视你的假设，收集你需要的额外信息，并考虑尝试不同的方法。
+当你找到答案时，请仔细验证答案。如果可能，请在你的回复中包含可验证的证据。
+"""
 
 USERPROXY_NAME_DEFAULT = "user"
-USERPROXY_AUTO_REPLY_DEFAULT = """如果你认为任务已经执行完毕或者需要人工介入，请回复"TERMINATE"终止任务，否则请继续执行任务。"""
+USERPROXY_AUTO_REPLY_DEFAULT = """请直接用以下内容回复：
+```TERMINATE```
+"""
 
 st.set_page_config(
         "Character Chat",
