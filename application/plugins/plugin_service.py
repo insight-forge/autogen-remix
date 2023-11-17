@@ -1,6 +1,6 @@
 import os
 
-FUNCTIONS_FILTERED = ['image_generate', 'python']
+FUNCTIONS_FILTERED = ['image_generate', 'python','search_baike']
 
 class PluginService:
 
