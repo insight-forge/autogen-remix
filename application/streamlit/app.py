@@ -224,14 +224,15 @@ def main():
     # streamlit ui start
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    print(st.session_state.messages)
     for message in st.session_state.messages:
         if "function_call" in message:
             message['content'] = None
-            st.markdown(message["function_call"])
+            with st.chat_message('assistant'):
+                st.markdown(message["function_call"])
         elif "name" in message:
-            if message['name'].startswith('image_'):
-                st.image(message['content'], width=350)
+            with st.chat_message('user'):
+                if message['name'].startswith('image_'):
+                    st.image(message['content'], width=350)
         else:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
