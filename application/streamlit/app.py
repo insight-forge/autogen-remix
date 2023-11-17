@@ -38,6 +38,7 @@ USERPROXY_AUTO_REPLY_DEFAULT = """请直接用以下内容回复：
 <|endofconversation|>
 """
 
+IMAGE_GEN_URL = "http://10.139.17.136:8089/sd_gen"
 st.set_page_config(
         "Character Chat",
         initial_sidebar_state="collapsed",
@@ -206,10 +207,13 @@ def main():
     #define all fucntion
     def generate_img(prompt):
         # 定义目标URL和要发送的数据
-        url = "http://10.139.17.136:8089/sd_gen"
         data = {"prompt": prompt}
-        response = requests.post(url, data=data)
-        return response.text
+        response = requests.post(IMAGE_GEN_URL, data=data)
+        result=response.json()
+        if result.get('code',-1)==0:
+            return result.get('url')
+        else:
+            return result.get('msg')
 
     def exec_python(code):
         return user_proxy.execute_code_blocks([("python", code)])
