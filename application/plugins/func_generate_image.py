@@ -16,7 +16,7 @@ meta_info = {
 def func(**kwargs):
 # 定义目标URL和要发送的数据
     import requests
-    data = {"prompt": kwargs}
+    data = kwargs
     response = requests.post("http://10.139.17.136:8089/sd_gen", data=data)
     result=response.json()
     if result.get('code',-1)==0:
