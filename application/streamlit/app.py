@@ -1,12 +1,11 @@
 import streamlit as st
 import asyncio
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
-import time
 import requests
-from IPython import get_ipython
 import autogen
 from autogen.agentchat.contrib.character_assistant_agent import CharacterAssistantAgent
 from autogen.agentchat.contrib.character_user_proxy_agent import CharacterUserProxyAgent
+from application.plugins.plugin_service import get_plugin_service
 import config
 ################################# PLEASE SET THE CONFIG FIRST ##################################
 CONFIG_PATH = config.CONFIG_PATH 
@@ -38,13 +37,21 @@ USERPROXY_AUTO_REPLY_DEFAULT = """请直接用以下内容回复：
 <|endofconversation|>
 """
 
-IMAGE_GEN_URL = "http://10.139.17.136:8089/sd_gen"
 st.set_page_config(
         "Character Chat",
         initial_sidebar_state="collapsed",
     )
 st.write("""# Character Chat""")
 
+#load plugins
+_plugin_service = get_plugin_service()
+function_name = []
+function_meta = []
+func = []
+for plugin in _plugin_service._plugins:
+    function_name.append(plugin['meta_info']['name'])
+    function_meta.append(plugin['meta_info'])
+    func.append(plugin['func'])
 
 class TrackableAssistantAgent(CharacterAssistantAgent):
     def _process_received_message(self, message, sender, silent):
@@ -156,39 +163,12 @@ def main():
     config_list = [item.update({'presence_penalty': presence_penalty}) or item for item in config_list if
                    item['model'] == selected_model]
     llm_config = {
-        "functions": [
-            {
-                "name": "image_generate",
-                "description": "generate a image by prompting if the user's intention is to generate an image",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "prompt": {
-                            "type": "string",
-                            "description": "prompt for generating image. Please note that prompt only supports English. If not, it must be translated into English",
-                        }
-                    },
-                    "required": ["prompt"],
-                },
-            },
-                {
-                    "name": "python",
-                    "description": "run cell in python and return the execution result.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "code": {
-                                "type": "string",
-                                "description": "Valid Python cell to execute.",
-                            }
-                        },
-                        "required": ["code"],
-                    },
-                },
-                          ],
         "request_timeout": 600,
         "config_list": config_list
     }
+    if function_meta:
+        llm_config.update({'functions': function_meta})
+
     print(llm_config)
 
     # create an AssistantAgent instance named "assistant"
@@ -205,25 +185,14 @@ def main():
         human_input_mode=human_input_mode,
         code_execution_config={'work_dir': 'coding'})
     #define all fucntion
-    def generate_img(prompt):
-        # 定义目标URL和要发送的数据
-        data = {"prompt": prompt}
-        response = requests.post(IMAGE_GEN_URL, data=data)
-        result=response.json()
-        if result.get('code',-1)==0:
-            return result.get('url')
-        else:
-            return result.get('msg')
-
-    def exec_python(code):
-        return user_proxy.execute_code_blocks([("python", code)])
-
-    user_proxy.register_function(
-        function_map={
-            "image_generate": generate_img,
-             "python":exec_python
-        }
-    )
+    if function_name and func:
+        assert len(function_name) == len(func)
+        func_map = {}
+        for i in range(len(func)):
+            func_map.update({function_name[i]: func[i]})
+        user_proxy.register_function(
+            function_map= func_map
+        )
 
     # streamlit ui start
     if "messages" not in st.session_state:
