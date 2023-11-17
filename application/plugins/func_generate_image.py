@@ -6,7 +6,7 @@ meta_info = {
                     "properties": {
                         "prompt": {
                             "type": "string",
-                            "description": "prompt for generating image. Please note that prompt only supports English, if not,translate that into English",
+                            "description": "prompt for generating image. Please note that prompt only supports English. if not, it must be translated to English",
                         }
                     },
                     "required": ["prompt"],
