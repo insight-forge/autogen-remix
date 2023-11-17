@@ -157,6 +157,8 @@ def main():
             with st.chat_message('user'):
                 if message['name'].startswith('image_'):
                     st.image(message['content'], width=350)
+                else:
+                    st.markdown(message['content'])
         else:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
