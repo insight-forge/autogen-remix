@@ -7,10 +7,10 @@ from IPython import get_ipython
 import autogen
 from autogen.agentchat.contrib.character_assistant_agent import CharacterAssistantAgent
 from autogen.agentchat.contrib.character_user_proxy_agent import CharacterUserProxyAgent
-
+import config
 ################################# PLEASE SET THE CONFIG FIRST ##################################
-CONFIG_PATH = "/Users/JunzhouWang/IdeaProjects/autogen-remix"
-CONFIG_FILENAME = "OAI_CONFIG_LIST"
+CONFIG_PATH = config.CONFIG_PATH 
+CONFIG_FILENAME = config.CONFIG_FILENAME
 ################################################################################################
 
 ASSISTANT_NAME_DEFAULT = "assistant"
@@ -165,7 +165,7 @@ def main():
                     "properties": {
                         "prompt": {
                             "type": "string",
-                            "description": "prompt for generating image. Please note that prompt only supports English, if not,translate that into English",
+                            "description": "prompt for generating image. Please note that prompt only supports English. If not, it must be translated into English",
                         }
                     },
                     "required": ["prompt"],
