@@ -72,27 +72,6 @@ class TrackableAssistantAgent(CharacterAssistantAgent):
 
 
 class TrackableUserProxyAgent(CharacterUserProxyAgent):
-
-    def __init__(
-            self,
-            name: str,
-            llm_config: Optional[Union[Dict, bool]] = False,
-            is_termination_msg: Optional[Callable[[Dict], bool]] = None,
-            max_consecutive_auto_reply: Optional[int] = None,
-            human_input_mode: Optional[str] = "NEVER",
-            code_execution_config: Optional[Union[Dict, bool]] = None,
-            **kwargs,
-    ):
-        super().__init__(
-            name,
-            is_termination_msg,
-            max_consecutive_auto_reply,
-            human_input_mode,
-            llm_config=llm_config,
-            code_execution_config=code_execution_config,
-            **kwargs,
-        )
-
     def _process_received_message(self, message, sender, silent):
         if isinstance(message, Dict) and "function_call" in message:
             st.session_state.messages.append(message)
@@ -105,34 +84,6 @@ class TrackableUserProxyAgent(CharacterUserProxyAgent):
             else:
                 st.markdown(message)
         return super()._process_received_message(message, sender, silent)
-
-    def get_human_input(self, prompt):
-
-        return "exit"
-
-    def initiate_chat(
-            self,
-            recipient: "ConversableAgent",
-            clear_history: Optional[bool] = True,
-            history: Optional[List] = None,
-            silent: Optional[bool] = False,
-            **context,
-    ):
-
-        self._prepare_chat(recipient, clear_history)
-
-        for message in history:
-            if "function_call" in message or "name" in message:
-                recipient._oai_messages[self].append(message)
-                self._oai_messages[recipient].append(message)
-            else:
-                recipient._oai_messages[self].append({'role': message['role'], 'content': message['content']})
-                if message['role'] == 'user':
-                    self._oai_messages[recipient].append({'role': 'assistant', 'content': message['content']})
-                else:
-                    self._oai_messages[recipient].append({'role': 'user', 'content': message['content']})
-
-        self.send(self.generate_init_message(**context), recipient, silent=silent)
 
 
 def main():

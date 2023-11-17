@@ -10,7 +10,6 @@ class PluginService:
         self.load_plugins()
 
     def load_plugins(self):
-        print(self._basedir)
         for dir in os.listdir(self._basedir):
             if dir.startswith('func_'):
                 with open(os.path.join(self._basedir, dir), mode="r", encoding="utf-8") as py_file:

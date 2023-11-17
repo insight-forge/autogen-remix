@@ -1,4 +1,4 @@
-from typing import Optional, Callable, Dict, Union
+from typing import Optional, Callable, Dict, Union, List
 from autogen.agentchat.conversable_agent import ConversableAgent
 
 class CharacterUserProxyAgent(ConversableAgent):
@@ -79,3 +79,30 @@ class CharacterUserProxyAgent(ConversableAgent):
             llm_config,
             default_auto_reply,
         )
+
+    def get_human_input(self, prompt):
+        return "exit"
+
+    def initiate_chat(
+            self,
+            recipient: "ConversableAgent",
+            clear_history: Optional[bool] = True,
+            history: Optional[List] = None,
+            silent: Optional[bool] = False,
+            **context,
+    ):
+
+        self._prepare_chat(recipient, clear_history)
+
+        for message in history:
+            if "function_call" in message or "name" in message:
+                recipient._oai_messages[self].append(message)
+                self._oai_messages[recipient].append(message)
+            else:
+                recipient._oai_messages[self].append({'role': message['role'], 'content': message['content']})
+                if message['role'] == 'user':
+                    self._oai_messages[recipient].append({'role': 'assistant', 'content': message['content']})
+                else:
+                    self._oai_messages[recipient].append({'role': 'user', 'content': message['content']})
+
+        self.send(self.generate_init_message(**context), recipient, silent=silent)
