@@ -16,10 +16,10 @@ CONFIG_FILENAME = "OAI_CONFIG_LIST"
 ASSISTANT_NAME_DEFAULT = "assistant"
 ASSISTANT_SYSTEM_DEFAULT = """你是一个有用的AI助手。使用你的编码和语言能力完成任务。
 
-当任务完成或需要人工输入时，必须在生成的内容末尾添加字符串”TERMINATE“，如以下示例：
+当任务完成或需要人工输入时，必须在生成的内容末尾添加字符串”END_AUTOMATION“，如以下示例：
 ```
 问：你好
-答：你好，有什么需要我帮助的吗？ TERMINATE
+答：你好，有什么需要我帮助的吗？ END_AUTOMATION
 ```
 
 在以下情况下，建议用户执行Python代码（在Python代码块中）或Shell脚本（在sh代码块中）。
@@ -35,7 +35,7 @@ ASSISTANT_SYSTEM_DEFAULT = """你是一个有用的AI助手。使用你的编码
 
 USERPROXY_NAME_DEFAULT = "user"
 USERPROXY_AUTO_REPLY_DEFAULT = """请直接用以下内容回复：
-TERMINATE
+END_AUTOMATION
 """
 
 st.set_page_config(
@@ -200,7 +200,7 @@ def main():
     user_proxy = TrackableUserProxyAgent(
         name=userproxy_name,
         default_auto_reply=userproxy_auto_reply,
-        is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("TERMINATE"),
+        is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("END_AUTOMATION"),
         human_input_mode=human_input_mode,
         code_execution_config={'work_dir': 'coding'})
     #define all fucntion
