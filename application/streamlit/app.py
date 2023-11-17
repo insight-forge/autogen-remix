@@ -164,7 +164,7 @@ def main():
                     "properties": {
                         "prompt": {
                             "type": "string",
-                            "description": "prompt for generating image. Please note that prompt only supports English",
+                            "description": "prompt for generating image. Please note that prompt only supports English, if not,translate that into English",
                         }
                     },
                     "required": ["prompt"],
@@ -172,7 +172,7 @@ def main():
             },
                 {
                     "name": "python",
-                    "description": "run cell in ipython and return the execution result.",
+                    "description": "run cell in python and return the execution result.",
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -224,14 +224,15 @@ def main():
     # streamlit ui start
     if "messages" not in st.session_state:
         st.session_state.messages = []
-    print(st.session_state.messages)
     for message in st.session_state.messages:
         if "function_call" in message:
             message['content'] = None
-            st.markdown(message["function_call"])
+            with st.chat_message('assistant'):
+                st.markdown(message["function_call"])
         elif "name" in message:
-            if message['name'].startswith('image_'):
-                st.image(message['content'], width=350)
+            with st.chat_message('user'):
+                if message['name'].startswith('image_'):
+                    st.image(message['content'], width=350)
         else:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
