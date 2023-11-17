@@ -164,7 +164,7 @@ def main():
                     "properties": {
                         "prompt": {
                             "type": "string",
-                            "description": "prompt for generating image. Please note that prompt only supports English",
+                            "description": "prompt for generating image. Please note that prompt only supports English, if not,translate that into English",
                         }
                     },
                     "required": ["prompt"],
@@ -172,7 +172,7 @@ def main():
             },
                 {
                     "name": "python",
-                    "description": "run cell in ipython and return the execution result.",
+                    "description": "run cell in python and return the execution result.",
                     "parameters": {
                         "type": "object",
                         "properties": {
