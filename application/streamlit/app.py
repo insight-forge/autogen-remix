@@ -89,7 +89,7 @@ class TrackableUserProxyAgent(CharacterUserProxyAgent):
 def main():
     with st.sidebar:
         st.header("OpenAI Configuration")
-        selected_model = st.selectbox("Model", ['gpt-3.5-turbo', 'gpt-4'], index=0)
+        selected_model = st.selectbox("Model", ['gpt-3.5-turbo', 'gpt-4-turbo', 'gpt-4'], index=1)
         presence_penalty = st.slider("presence_penalty：", -2.0, 2.0, 0.7, 0.1)
 
         with st.expander("AssistantAgent", False):
@@ -108,6 +108,7 @@ def main():
         filter_dict={
             "model": {
                 "gpt-3.5-turbo",
+                'gpt-4-turbo',
                 "gpt-4",
             }
         })
