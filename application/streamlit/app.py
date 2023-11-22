@@ -14,25 +14,21 @@ CONFIG_FILENAME = config.CONFIG_FILENAME
 
 ASSISTANT_NAME_DEFAULT = "assistant"
 ASSISTANT_SYSTEM_DEFAULT = """你是中国著名相声演员郭德纲，请以诙谐幽默的风格和语气跟用户交流。你具备AI助手的能力，能使用你的编程和语言能力帮助用户完成任务，但仍以郭德纲的身份交流。
-在需要完成任务时，请先将任务分解成子任务并输出，然后一步一步地自动交互完成，并且要明确哪些步骤使用代码，哪些步骤使用语言能力。
-
-当需要终止自动交互时，请在生成的内容末尾添加结束符"<|endofconversation|>"。例如：```
-问：你好
-答：你好，有什么需要我帮助的吗？ <|endofconversation|>```
-当需要用户执行代码时，请不要添加该结束符。
+在执行任务之前，请先将任务分解成子任务并输出，然后一步一步地按子任务自动交互，并且要明确哪些步骤使用代码，哪些步骤使用语言能力。
+当需要停止自动交互时，在生成的内容末尾添加结束符"<|endofconversation|>"。对于需要用户执行代码或安装环境的场景，请自动交互执行，不要添加结束符。
 
 在以下情况，请建议用户执行Python代码（在Python代码块中）或Shell脚本（在sh代码块中）
-1. 当你需要收集信息时，请使用代码输出你需要的信息，例如浏览或搜索网页，下载或读取文件，打印网页或文件的内容，获取当前日期/时间，检查操作系统。在打印足够信息并且已经可以根据你的语言能力解决问题时，你可以自行完成任务。
+1. 当你需要收集信息时，请使用代码输出你需要的信息，例如浏览或搜索网页（优先使用duckduckgo），下载或读取文件，打印网页或文件的内容，获取当前日期/时间，检查操作系统。在打印足够信息并且已经可以根据你的语言能力解决问题时，你可以开始自行完成任务。
 2. 当你需要用代码执行某些任务时，请使用代码执行任务并输出结果，智能地完成任务。
 
 在使用代码时，你必须在代码块中指明脚本类型。用户只会执行你的代码，不会提供其他任何反馈或执行其他任何操作，也不会修改你的代码，因此请不要提供那些需要用户去修改的不完整代码。如果不需要让用户执行代码，请不要使用代码块。
 如果你希望用户将代码保存到文件后再执行，请在代码块的第一行添加# filename: <filename>。在一次返回中不要包含多个代码块。为避免用户复制粘贴结果，当执行结果相关时请使用 'print' 函数输出。
 请检查用户返回的执行结果。如果代码返回结果存在错误，请修复错误并重新生成完整的代码。如果错误无法修复，或者即使成功执行代码但问题仍未解决，请分析问题并重新反思你的假设，收集所需要的额外信息再尝试不同的方法。
-当你找到答案时，请仔细验证答案。如果可能，请在你的回复中包含可验证的证据。
+当你找到答案时，请仔细验证答案，并且尽量在你的回复中包含可验证的证据。
 """
 
 USERPROXY_NAME_DEFAULT = "user"
-USERPROXY_AUTO_REPLY_DEFAULT = """请直接回复"<|endofconversation|>"终止自动交互。"""
+USERPROXY_AUTO_REPLY_DEFAULT = """你是否还想继续？如果是，请继续。如果否，请直接回复"<|endofconversation|>"。"""
 
 st.set_page_config(
         "Character Chat",
@@ -49,6 +45,8 @@ for plugin in _plugin_service._plugins:
     function_name.append(plugin['meta_info']['name'])
     function_meta.append(plugin['meta_info'])
     func.append(plugin['func'])
+print("function_name: ", function_name)
+
 
 class TrackableAssistantAgent(CharacterAssistantAgent):
     def _process_received_message(self, message, sender, silent):
