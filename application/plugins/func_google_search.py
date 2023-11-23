@@ -16,7 +16,7 @@ meta_info = {
 def func(**kwargs):
     import requests
     data = kwargs
-    url='http://10.60.120.30:8088/google_search'
+    url='http://10.139.17.136:8089/google_search'
     response = requests.post(url, data=data)
     result=response.json()
     code=result.get('code',-1)
