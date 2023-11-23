@@ -1,6 +1,6 @@
 meta_info = {
                 "name": "search_from_ddg",
-                "description": "从duckduckgo检索新闻, 图片, 视频或者web网页结果",
+                "description": "从网站duckduckgo检索新闻, 图片, 视频或者web网页内容",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -10,7 +10,7 @@ meta_info = {
                         },
                         "vertical": {
                             "type": "string",
-                            "description": """这是枚举类型，取值如下：1. news: 搜索新闻; 2. images: 搜索图片; 3. videos: 搜索视频; 4. 搜索web网页""",
+                            "description": """这是枚举类型，取值如下：1. news: 搜索新闻; 2. images: 搜索图片; 3. videos: 搜索视频; 4. web: 搜索web网页""",
                         },
                         "num_results": {
                             "type": "number",
