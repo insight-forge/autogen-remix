@@ -25,14 +25,14 @@ meta_info = {
 def func(query: str, vertical: str = "news", num_results: int = 3) -> str:
     import json
     from duckduckgo_search import DDGS
+    from application.streamlit.config import PROXIES
 
     print("Searching with query: {0}".format(query))
     search_results = []
     if not query:
         return json.dumps(search_results)
 
-    proxies = None  # "http://127.0.0.1:7890"
-    ddgs = DDGS(proxies=proxies)
+    ddgs = DDGS(proxies=PROXIES)
 
     if vertical == "news":
         results = ddgs.news(query)
