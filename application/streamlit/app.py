@@ -86,7 +86,7 @@ def main():
     with st.sidebar:
         st.header("OpenAI Configuration")
         selected_model = st.selectbox("Model", ['gpt-3.5-turbo', 'gpt-4-turbo', 'gpt-4'], index=1)
-        presence_penalty = st.slider("presence_penalty：", -2.0, 2.0, 0.7, 0.1)
+        frequency_penalty = st.slider("frequency_penalty：", -2.0, 2.0, 0.8, 0.1)
 
         with st.expander("AssistantAgent", False):
             assistant_name = st.text_input('name', value=ASSISTANT_NAME_DEFAULT)
@@ -108,7 +108,7 @@ def main():
                 "gpt-4",
             }
         })
-    config_list = [item.update({'presence_penalty': presence_penalty}) or item for item in config_list if
+    config_list = [item.update({'frequency_penalty': frequency_penalty}) or item for item in config_list if
                    item['model'] == selected_model]
     llm_config = {
         "request_timeout": 600,
