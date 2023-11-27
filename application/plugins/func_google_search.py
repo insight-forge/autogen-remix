@@ -1,6 +1,6 @@
 meta_info = {
                 "name": "search_google",
-                "description": "search the internet if user's intention is to retrieve information",
+                "description": "search web results from google",
                 "parameters": {
                     "type": "object",
                     "properties": {
