@@ -1,7 +1,6 @@
 import streamlit as st
 import asyncio
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
-import requests
 import autogen
 from autogen.agentchat.contrib.character_assistant_agent import CharacterAssistantAgent
 from autogen.agentchat.contrib.character_user_proxy_agent import CharacterUserProxyAgent
@@ -51,11 +50,6 @@ print("function_name: ", function_name)
 
 class TrackableAssistantAgent(CharacterAssistantAgent):
     def _process_received_message(self, message, sender, silent):
-        if isinstance(message, Dict) and "name" in message:
-            st.session_state.messages.append(message)
-        else:
-            st.session_state.messages.append({"role": sender.name, "content": message})
-
         with st.chat_message(sender.name):
             if isinstance(message, Dict) and 'name' in message:
                 if message['name'].startswith('image_'):
@@ -68,12 +62,12 @@ class TrackableAssistantAgent(CharacterAssistantAgent):
 
 
 class TrackableUserProxyAgent(CharacterUserProxyAgent):
-    def _process_received_message(self, message, sender, silent):
-        if isinstance(message, Dict) and "function_call" in message:
-            st.session_state.messages.append(message)
-        else:
-            st.session_state.messages.append({"role": sender.name, "content": message})
+    def get_human_input(self, prompt):
+        st.session_state.messages['userproxy'] = self
+        st.session_state.messages['assistant'] = list(self._oai_messages.keys())[0]
+        return "exit"
 
+    def _process_received_message(self, message, sender, silent):
         with st.chat_message(sender.name):
             if isinstance(message, Dict) and "function_call" in message:
                 st.markdown(message["function_call"])
@@ -144,29 +138,35 @@ def main():
 
     # streamlit ui start
     if "messages" not in st.session_state:
-        st.session_state.messages = []
-    for message in st.session_state.messages:
-        if "function_call" in message:
-            message['content'] = None
-            with st.chat_message('assistant'):
-                st.markdown(message["function_call"])
-        elif "name" in message:
-            with st.chat_message('user'):
-                if message['name'].startswith('image_'):
-                    st.image(message['content'], width=350)
-                else:
-                    st.markdown(message['content'])
-        else:
-            with st.chat_message(message["role"]):
-                st.markdown(message["content"])
+        st.session_state.messages = {'userproxy': None, 'assistant': None}
+    # print history message
+    if st.session_state.messages['assistant']:
+        for message in st.session_state.messages['assistant']._oai_messages[st.session_state.messages['userproxy']]:
+            if "function_call" in message:
+                with st.chat_message('assistant'):
+                    st.markdown(message["function_call"])
+            elif "name" in message:
+                with st.chat_message('user'):
+                    if message['name'].startswith('image_'):
+                        st.image(message['content'], width=350)
+                    else:
+                        st.markdown(message['content'])
+            else:
+                with st.chat_message(message["role"]):
+                    st.markdown(message["content"])
 
     if user_input := st.chat_input("Type something...", key="prompt"):
         # Define an asynchronous function
         async def initiate_chat():
             user_proxy.initiate_chat(
                 assistant,
+                message=user_input
+            )
+
+        async def initiate_chat_n():
+            st.session_state.messages['userproxy'].initiate_chat(
+                st.session_state.messages['assistant'],
                 message=user_input,
-                history=st.session_state.messages,
                 clear_history=False
             )
 
@@ -174,7 +174,10 @@ def main():
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         # Run the asynchronous function within the event loop
-        loop.run_until_complete(initiate_chat())
+        if not st.session_state.messages['userproxy']:
+            loop.run_until_complete(initiate_chat())
+        else:
+            loop.run_until_complete(initiate_chat_n())
 
 
 if __name__ == "__main__":
