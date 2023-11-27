@@ -706,7 +706,7 @@ class Completion(openai_Completion):
     def create(
         cls,
         context: Optional[Dict] = None,
-        use_cache: Optional[bool] = True,
+        use_cache: Optional[bool] = False,
         config_list: Optional[List[Dict]] = None,
         filter_func: Optional[Callable[[Dict, Dict, Dict], bool]] = None,
         raise_on_ratelimit_or_timeout: Optional[bool] = True,
