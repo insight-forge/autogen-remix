@@ -1,7 +1,5 @@
 import os
 
-FUNCTIONS_FILTERED = ['image_generate', 'python', 'search_from_ddg','search_google']  # 'search_baike'
-
 class PluginService:
 
     def __init__(self):
@@ -17,8 +15,7 @@ class PluginService:
                 output = {}
                 exec(py_code, {}, output)
                 assert "func" in output and "meta_info" in output
-                if output['meta_info']['name'] in FUNCTIONS_FILTERED:
-                    self._plugins.append(output)
+                self._plugins.append(output)
 
 
 def get_plugin_service() -> PluginService:
