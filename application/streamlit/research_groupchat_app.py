@@ -63,24 +63,17 @@ class TrackableUserProxyAgent(autogen.UserProxyAgent):
 def main():
     with st.sidebar:
         st.header("OpenAI Configuration")
-        selected_model = st.selectbox("Model", ['gpt-3.5-turbo', 'gpt-4-turbo', 'gpt-4'], index=2)
+        selected_model = st.selectbox("Model", ['gpt-35-turbo-1106', 'gpt-4-1106-preview', 'gpt-4'], index=2)
         frequency_penalty = st.slider("frequency_penalty：", -2.0, 2.0, 0.8, 0.1)
 
     # update llm_config
     config_list = autogen.config_list_from_json(
         file_location=CONFIG_PATH,
-        env_or_file=CONFIG_FILENAME,
-        filter_dict={
-            "model": {
-                "gpt-3.5-turbo",
-                'gpt-4-turbo',
-                "gpt-4",
-            }
-        })
+        env_or_file=CONFIG_FILENAME)
     config_list = [item.update({'frequency_penalty': frequency_penalty}) or item for item in config_list if
                    item['model'] == selected_model]
     llm_config = {
-        "request_timeout": 600,
+        "timeout": 600,
         "config_list": config_list
     }
 
