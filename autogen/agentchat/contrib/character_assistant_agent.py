@@ -1,6 +1,7 @@
 from autogen.agentchat.conversable_agent import ConversableAgent
 from typing import Optional, Dict, Union, Callable
 
+
 class CharacterAssistantAgent(ConversableAgent):
 
     DEFAULT_SYSTEM_MESSAGE = """You are a helpful AI assistant.
