@@ -126,10 +126,7 @@ def main():
     if st.session_state.manager:
         for message in st.session_state.manager.groupchat.messages:
             with st.chat_message(message['name'], avatar=HEAD_SCULPTURE[message['name']]):
-                if 'function_call' in message:
-                    st.markdown(message['function_call'])
-                else:
-                    st.markdown(message['content'])
+                st.markdown(message['content'])
 
     if user_input := st.chat_input("Type something...", key="prompt"):
         # Define an asynchronous function

@@ -6,8 +6,9 @@ from autogen.agentchat.contrib.character_assistant_agent import CharacterAssista
 from autogen.agentchat.contrib.character_user_proxy_agent import CharacterUserProxyAgent
 from application.plugins.plugin_service import get_plugin_service
 import config
+from openai.types.chat.chat_completion import ChatCompletionMessage
 ################################# PLEASE SET THE CONFIG FIRST ##################################
-CONFIG_PATH = config.CONFIG_PATH 
+CONFIG_PATH = config.CONFIG_PATH
 CONFIG_FILENAME = config.CONFIG_FILENAME
 ################################################################################################
 
@@ -72,8 +73,10 @@ class TrackableUserProxyAgent(CharacterUserProxyAgent):
 
     def _process_received_message(self, message, sender, silent):
         with st.chat_message(sender.name):
-            if isinstance(message, Dict) and "function_call" in message:
-                st.markdown(message["function_call"])
+            if isinstance(message, ChatCompletionMessage) and message.function_call:
+                st.markdown(dict(message.function_call))
+            elif isinstance(message, Dict) and 'function_call' in message:
+                st.markdown(message['function_call'])
             else:
                 st.markdown(message)
         return super()._process_received_message(message, sender, silent)
