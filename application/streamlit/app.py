@@ -29,7 +29,7 @@ ASSISTANT_SYSTEM_DEFAULT = """你是中国著名相声演员郭德纲，请以�
 """
 
 USERPROXY_NAME_DEFAULT = "user"
-USERPROXY_AUTO_REPLY_DEFAULT = """是否继续？如果是，请继续。如果否，请在内容末尾添加结束符"<|endofconversation|>"。"""
+USERPROXY_AUTO_REPLY_DEFAULT = """请回复结束符"<|endofconversation|>"暂停自动交互。"""
 
 st.set_page_config(
         "Character Chat",
@@ -122,7 +122,7 @@ def main():
     user_proxy = TrackableUserProxyAgent(
         name=userproxy_name,
         default_auto_reply=userproxy_auto_reply,
-        is_termination_msg=lambda x: x.get("content", "") and x.get("content", "").rstrip().endswith("<|endofconversation|>"),
+        is_termination_msg=lambda x: x.get("content", "") and "<|endofconversation|>" in x.get("content", ""),
         human_input_mode=human_input_mode,
         code_execution_config={'work_dir': 'coding'})
     #define all fucntion
