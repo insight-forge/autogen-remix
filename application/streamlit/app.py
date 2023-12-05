@@ -1,10 +1,14 @@
 import streamlit as st
 import asyncio
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type, Union
+from collections import defaultdict
+import json
 import autogen
+from autogen.agentchat.agent import Agent
 from autogen.agentchat.contrib.character_assistant_agent import CharacterAssistantAgent
 from autogen.agentchat.contrib.character_user_proxy_agent import CharacterUserProxyAgent
 from application.plugins.plugin_service import get_plugin_service
+from application.memory.memory import Memory
 import config
 from openai.types.chat.chat_completion import ChatCompletionMessage
 ################################# PLEASE SET THE CONFIG FIRST ##################################
@@ -53,6 +57,17 @@ print("function_name: ", function_name)
 
 
 class TrackableAssistantAgent(CharacterAssistantAgent):
+    def __init__(
+        self,
+        name: str,
+        memory: Optional[Memory] = None,
+        system_message: Optional[str] = "You are a helpful AI Assistant.",
+        llm_config: Optional[Union[Dict, Literal[False]]] = None,
+    ):
+        super().__init__(name=name, system_message=system_message, llm_config=llm_config)
+        self.memory = memory
+        self.summary_messages = defaultdict(list)
+
     def _process_received_message(self, message, sender, silent):
         with st.chat_message(sender.name):
             if isinstance(message, Dict) and 'name' in message:
@@ -63,6 +78,50 @@ class TrackableAssistantAgent(CharacterAssistantAgent):
             else:
                 st.markdown(message)
         return super()._process_received_message(message, sender, silent)
+
+
+    def _append_oai_message(self, message: Union[Dict, str], role, conversation_id: Agent) -> bool:
+        message = self._message_to_dict(message)
+        oai_message = {k: message[k] for k in ("content", "function_call", "name", "context") if k in message}
+        if "content" not in oai_message:
+            if "function_call" in oai_message:
+                oai_message["content"] = None  # if only function_call is provided, content will be set to None.
+            else:
+                return False
+
+        oai_message["role"] = "function" if message.get("role") == "function" else role
+        if "function_call" in oai_message:
+            oai_message["role"] = "assistant"  # only messages with role 'assistant' can have a function call.
+            oai_message["function_call"] = dict(oai_message["function_call"])
+        self._oai_messages[conversation_id].append(oai_message)
+        if self.memory:
+            self.summary_messages[conversation_id].append(oai_message)
+        return True
+
+    def receive(
+        self,
+        message: Union[Dict, str],
+        sender: Agent,
+        request_reply: Optional[bool] = None,
+        silent: Optional[bool] = False,
+    ):
+        self._process_received_message(message, sender, silent)
+        if request_reply is False or request_reply is None and self.reply_at_receive[sender] is False:
+            return
+        if self.memory:
+            messages, is_summarized = self.memory.summarize_messages_inplace(self._oai_system_message + self.summary_messages[sender])
+            if is_summarized:
+                print("messages before summarize:")
+                print(json.dumps(self._oai_system_message + self.summary_messages[sender], ensure_ascii=False))
+                print("messages after summarize:")
+                print(json.dumps(messages, ensure_ascii=False))
+            self.summary_messages[sender] = messages[1:]
+        else:
+            messages = self.chat_messages[sender]
+
+        reply = self.generate_reply(messages=messages, sender=sender)
+        if reply is not None:
+            self.send(reply, sender, silent=silent)
 
 
 class TrackableUserProxyAgent(CharacterUserProxyAgent):
@@ -112,11 +171,13 @@ def main():
 
     print(llm_config)
 
+    assistant_memory = Memory(llm_config=llm_config)
     # create an AssistantAgent instance named "assistant"
     assistant = TrackableAssistantAgent(
         name=assistant_name,
         system_message=assistant_system,
-        llm_config=llm_config)
+        llm_config=llm_config,
+        memory=assistant_memory)
 
     # create a UserProxyAgent instance named "user"
     user_proxy = TrackableUserProxyAgent(
