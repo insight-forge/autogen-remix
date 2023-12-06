@@ -7,9 +7,17 @@ meta_info = {
                         "query": {
                             "type": "string",
                             "description": "query term for search internet. Please note that query only supports Chinese. if not, it MUST be translated to Chinese",
-                        }
+                        },
+                        "vertical": {
+                            "type": "string",
+                            "description": "This value is an enumeration type, and its values are web: search web pages, image: search images",
+                        },
+                        "search_count": {
+                            "type": "integer",
+                            "description": "Number of search results",
+                        },
                     },
-                    "required": ["query"],
+                    "required": ["query","vertical"],
                 },
             }
 
@@ -17,18 +25,13 @@ def func(**kwargs):
     import requests
     data = kwargs
     url='http://10.139.17.136:8089/google_search'
+    search_count=data.get("search_count",3)
+    search_count=int(search_count)
+    data["search_count"]=search_count
     response = requests.post(url, data=data)
     result=response.json()
     code=result.get('code',-1)
     if code==0:
-        return {'title':result.get('title',''),
-                'des':result.get('des',''),
-                'query':data.get('query',''),
-                'url':result.get('url','')
-                }
+        return result.get("search_results",[])
 
-    return {'title':'',
-                'des':result.get('msg','') if len(result.get('msg',''))>0 else 'no search result',
-                'query':data.get('query',''),
-                'url':''
-                }
+    return []
