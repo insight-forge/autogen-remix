@@ -23,6 +23,7 @@ meta_info = {
 
 def func(**kwargs):
     import requests
+    print("args: ", kwargs)
     data = kwargs
     url='http://10.139.17.136:8089/google_search'
     search_count=data.get("search_count",3)
