@@ -42,7 +42,7 @@ st.set_page_config(
 st.write("""# 郭德纲""")
 
 #load plugins
-FUNCTIONS_FILTERED = ['image_generate', 'python', 'search_from_ddg','search_google']  # 'search_baike'
+FUNCTIONS_FILTERED = ['image_generate', 'python', 'search_google']  # 'search_baike' 'search_from_ddg'
 
 _plugin_service = get_plugin_service()
 function_name = []
