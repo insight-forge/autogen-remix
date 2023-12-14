@@ -10,7 +10,7 @@ meta_info = {
                         },
                         "vertical": {
                             "type": "string",
-                            "description": "This value is an enumeration type, and its values are web: search web pages, image: search images, video: search videos",
+                            "description": "This value is an enumeration type, and its values are web: search web pages, image: search images, video: search videos, news: search news(if no result,please use web)",
                         },
                         "search_count": {
                             "type": "integer",
