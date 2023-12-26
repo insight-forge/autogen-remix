@@ -17,7 +17,7 @@ st.set_page_config(
 st.write("""# Character Chat""")
 
 # load plugins
-FUNCTIONS_FILTERED = ['image_generate', 'search_google']  # 'search_baike' 'search_from_ddg'
+FUNCTIONS_FILTERED = ['image_generate', 'search_google_en']  # 'search_baike' 'search_from_ddg'
 
 _plugin_service = get_plugin_service()
 function_name, function_meta, func = [], [], []
