@@ -3,6 +3,7 @@ import asyncio
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type, Union, Set
 from application.plugins.plugin_service import get_plugin_service
 from application.character.config import (execute_function, config_list_from_json, system_message_visualize, CHARACTER)
+from application.memory.memory_en import Memory
 import config
 import openai
 
@@ -100,6 +101,7 @@ def main():
         llm_config.update({'functions': function_meta})
 
     # print(llm_config)
+    memory = Memory(llm_config=llm_config)
 
     def openai_request(messages: List) -> Dict:
         completion = openai.ChatCompletion.create(
@@ -120,11 +122,13 @@ def main():
         with st.sidebar:
             st.markdown(st.session_state.side_markdown, unsafe_allow_html=True)
 
-    if "messages" not in st.session_state:
-        st.session_state.messages = []
+    if "fake_messages" not in st.session_state:
+        st.session_state.fake_messages = []
+    if "real_messages" not in st.session_state:
+        st.session_state.real_messages = []
     # print history message
-    if st.session_state.messages:
-        for message in st.session_state.messages:
+    if st.session_state.fake_messages:
+        for message in st.session_state.fake_messages:
             if "name" in message:
                 with st.chat_message('function', avatar="🤖"):
                     if message['name'].startswith('image_'):
@@ -141,7 +145,6 @@ def main():
                     else:
                         st.markdown(message["content"])
     else:
-        system = ""
         if st.button("Generate characters through LLM") and SYSTEM_PROMPT:
             if SYSTEM_PROMPT != CHARACTER[dialogue_mode]["default_system_prompt"]:
                 system = openai_request([{'role': 'user', 'content': SYSTEM_PROMPT}])['content']
@@ -153,39 +156,50 @@ def main():
                 "Generate a character prompt, starting with 'you are', with the following known information:\n", "")
             system_message_visualize(system, st)
 
-    if st.session_state.messages:
+    if st.session_state.real_messages:
         if user_input := st.chat_input("Type something...", key="prompt"):
             # Define an asynchronous function
-            st.session_state.messages.append({'role': 'user', 'content': user_input})
+            st.session_state.fake_messages.append({'role': 'user', 'content': user_input})
+            st.session_state.real_messages.append({'role': 'user', 'content': user_input})
             with st.chat_message('user'):
                 st.markdown(user_input)
 
             async def initiate_chat():
-                message = openai_request(st.session_state.messages)
+                st.session_state.real_messages = memory.summarize_messages_inplace(st.session_state.real_messages)
+                message = openai_request(st.session_state.real_messages)
                 content = message.get("function_call", message.get("content"))
                 with st.chat_message('assistant'):
                     st.markdown(content)
                 if "function_call" not in message:
-                    st.session_state.messages.append({'role': 'assistant', 'content': content})
+                    st.session_state.fake_messages.append({'role': 'assistant', 'content': content})
+                    st.session_state.real_messages.append({'role': 'assistant', 'content': content})
                 else:
-                    st.session_state.messages.append({'role': 'assistant', 'content': None, 'function_call': content})
+                    st.session_state.fake_messages.append(
+                        {'role': 'assistant', 'content': None, 'function_call': content})
+                    st.session_state.real_messages.append(
+                        {'role': 'assistant', 'content': None, 'function_call': content})
 
                 if "function_call" in message:
                     res = execute_function(message['function_call'], func_map)
-                    st.session_state.messages.append(res)
+                    st.session_state.fake_messages.append(res)
+                    st.session_state.real_messages.append(res)
                     with st.chat_message('function', avatar="🤖"):
                         if res['name'].startswith('image_'):
                             st.image(res['content'], width=350)
                         else:
                             st.markdown(res['content'])
-                    print(st.session_state.messages)
-                    message_sec = openai_request(st.session_state.messages)
+                    st.session_state.real_messages = memory.summarize_messages_inplace(st.session_state.real_messages)
+                    message_sec = openai_request(st.session_state.fake_messages)
                     content_sec = message_sec.get("function_call", message_sec.get("content"))
 
-                    st.session_state.messages.append({'role': 'assistant', 'content': content_sec})
+                    st.session_state.fake_messages.append({'role': 'assistant', 'content': content_sec})
+                    st.session_state.real_messages.append({'role': 'assistant', 'content': content_sec})
                     with st.chat_message('assistant'):
                         st.markdown(content_sec)
-                print(st.session_state.messages)
+                print("*********real_messages************")
+                print(st.session_state.real_messages)
+                print("*********feak_messages*************")
+                print(st.session_state.fake_messages)
                 return
 
                 # Create an event loop
