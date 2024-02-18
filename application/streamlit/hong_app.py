@@ -2,14 +2,23 @@ import streamlit as st
 import asyncio
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type, Union, Set
 from application.plugins.plugin_service import get_plugin_service
-from application.hong.config import (execute_function, config_list_from_json, system_message_visualize, Scene)
+from application.hong.config import (config_list_from_json, Scene, get_wenxin_access_token)
 import config
-import openai
+import openai, requests
 import json
+import dashscope
+from http import HTTPStatus
 
 ################################# PLEASE SET THE CONFIG FIRST ##################################
 CONFIG_PATH = config.CONFIG_PATH
 CONFIG_FILENAME = config.CONFIG_FILENAME
+
+# qwen config
+dashscope.api_key = "YOUR_DASHSCOPE_API_KEY"
+
+#wenxin config
+WENXIN_API_KEY = "YOUR_WENXIN_API_KEY"
+WENXIN_SECRET_KEY = "YOUR_WENXIN_SECRET_KEY"
 ################################################################################################
 PROMPT_TEMPLATE = """你是{identity}，现在你因为一件事情和你的{other_party}产生了矛盾，而你的{other_party}正在请求你的原谅。你要根据你的{other_party}说的话回话并选择原谅值，原谅值范围从-30到30，为正值则代表你心情有所好转，值越大则好转越多，为负值则代表你心情变差了，值越小则越差。
 
@@ -38,7 +47,8 @@ st.write("""# 哄哄模拟器""")
 def main():
     with st.sidebar:
         st.header("OpenAI Configuration")
-        selected_model = st.selectbox("Model", ['gpt-35-turbo-1106', 'gpt-4-1106-preview', 'gpt-4'], index=1)
+        selected_model = st.selectbox("Model", ['gpt-35-turbo-1106', 'gpt-4-1106-preview', 'gpt-4', 'qwen-max', 'wenxin-4.0'],
+                                      index=1)
 
         dialogue_mode = st.selectbox("选择一个场景：",
                                      Scene.keys(),
@@ -65,19 +75,39 @@ def main():
         env_or_file=CONFIG_FILENAME)
     llm_config = next((item for item in config_list if item['model'] == selected_model), {})
 
-    client = openai.AzureOpenAI(
-        api_key=llm_config.get("api_key"),
-        azure_endpoint=llm_config.get("base_url"),
-        api_version=llm_config.get("api_version")
-    )
-
-    def openai_request(messages: List) -> str:
-        completion = client.chat.completions.create(
-            model=llm_config.get("model"),
-            temperature=1.0,
-            messages=messages
+    if selected_model not in ['qwen-max', 'wenxin-4.0']:
+        client = openai.AzureOpenAI(
+            api_key=llm_config.get("api_key"),
+            azure_endpoint=llm_config.get("base_url"),
+            api_version=llm_config.get("api_version")
         )
-        return completion.choices[0].message.content
+
+    def llm_request(messages: List) -> str:
+        print(messages)
+        if selected_model not in ['qwen-max', 'wenxin-4.0']:
+            content = client.chat.completions.create(
+                model=llm_config.get("model"),
+                temperature=1.0,
+                messages=messages
+            ).choices[0].message.content
+        elif selected_model == 'qwen-max':
+            completion = dashscope.Generation.call(
+                dashscope.Generation.Models.qwen_max,
+                messages=messages,
+                result_format='message',  # set the result to be "message" format.
+            )
+            content = completion.output.choices[0].message.content if completion.status_code == HTTPStatus.OK else ""
+        elif selected_model == 'wenxin-4.0':
+            url = "https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/completions_pro?access_token=" + get_wenxin_access_token(WENXIN_API_KEY, WENXIN_SECRET_KEY)
+            payload = json.dumps({
+                "messages": messages
+            })
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            response = requests.request("POST", url, headers=headers, data=payload)
+            content = json.loads(response.text)['result']
+        return content
 
     format_params = {
         'identity': Scene[dialogue_mode]['identity'],
@@ -131,16 +161,18 @@ def main():
             st.session_state.messages.append({'role': 'user', 'content': user_input})
             history_conv.append(f"你{Scene[dialogue_mode]['other_party']}：{user_input}")
             format_params['history_conv'] = "\n".join(history_conv)
-            model_message = [{'role': 'system', 'content': PROMPT_TEMPLATE.format(**format_params) + REPLY_FORMAT}]
+
+            model_role = 'system' if selected_model not in ['qwen-max', 'wenxin-4.0'] else 'user'
+            model_message = [{'role': model_role, 'content': PROMPT_TEMPLATE.format(**format_params) + REPLY_FORMAT}]
             with st.chat_message('user'):
                 st.markdown(user_input)
 
-            response_openai = openai_request(model_message)
+            response_llm = llm_request(model_message)
             for _ in range(5):
                 try:
-                    start_idx = response_openai.index('{')
-                    end_idx = response_openai.index('}')
-                    response = json.loads(response_openai[start_idx:end_idx + 1])
+                    start_idx = response_llm.index('{')
+                    end_idx = response_llm.index('}')
+                    response = json.loads(response_llm[start_idx:end_idx + 1])
                     reply = ""
                     reply += f"({response['expression']})" if response['expression'] else ""
                     reply += f"({response['action']})" if response['action'] else ""
@@ -163,7 +195,7 @@ def main():
                                     text=f"对话轮次：{len(st.session_state.messages) // 2}/10")
                     break
                 except:
-                    print("解析失败，模型返回内容：\n" + response_openai)
+                    print("解析失败，模型返回内容：\n" + response_llm)
                     st.toast("解析失败，正在重试······")
 
 

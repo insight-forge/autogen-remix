@@ -1,5 +1,5 @@
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type, Union, Set
-import os, json, logging, re
+import os, json, logging, re, requests
 import streamlit
 
 Scene = {}
@@ -87,3 +87,15 @@ def execute_function(func_call, _function_map) -> Dict[str, str]:
         "role": "function",
         "content": str(content),
     }
+
+def get_wenxin_access_token(api_key, secret_key):
+    url = "https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id={api_key}&client_secret={secret_key}".format(**{'api_key': api_key, 'secret_key': secret_key})
+
+    payload = json.dumps("")
+    headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+    }
+
+    response = requests.request("POST", url, headers=headers, data=payload)
+    return response.json().get("access_token")
